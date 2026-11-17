@@ -1,29 +1,113 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>İdeAI - İdeal Yapay Zeka</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080b16">
+  <title>Lynko | Linklerini kısalt</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
+  <div class="glow glow-one"></div><div class="glow glow-two"></div>
+  <header class="topbar">
+    <a class="brand" href="{{ url_for('index') }}"><span class="brand-icon">↗</span> lynko<span class="dot">.</span></a>
+    <nav>
+      {% if current_user %}
+        <span class="nav-user">Merhaba, {{ current_user.username }}</span>
+        <form action="{{ url_for('logout') }}" method="post"><input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="nav-button">Çıkış yap</button></form>
+      {% else %}
+        <a href="{{ url_for('login') }}">Giriş yap</a>
+        <a class="nav-cta" href="{{ url_for('register') }}">Hesap oluştur</a>
+      {% endif %}
+    </nav>
+  </header>
 
-    <div class="chat-container">
-        <div class="chat-header">
-            <h2>🧠 İdeAI</h2>
-            <span class="status-dot"></span> Online
-        </div>
-        
-        <div class="chat-box" id="chatBox">
-            <div class="message bot-message">Merhaba! Ben İdeAI. Bugün senin için neyi ideal hale getirebilirim?</div>
-        </div>
+  <main class="container">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}<div class="alerts">{% for category, message in messages %}<div class="alert {{ category }}">{{ message }}</div>{% endfor %}</div>{% endif %}
+    {% endwith %}
 
-        <div class="chat-input-area">
-            <input type="text" id="userInput" placeholder="Bir şeyler yazın..." onkeypress="handleKeyPress(event)">
-            <button onclick="sendMessage()">Gönder</button>
-        </div>
-    </div>
+    {% if page == "register" %}
+      <section class="auth-card">
+        <div class="eyebrow">LYNKO'YA KATIL</div><h1>Hesabını oluştur<span class="accent">.</span></h1>
+        <p class="muted">Bağlantılarını tek yerden yönetmeye başla.</p>
+        <form method="post" class="stack-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Kullanıcı adı<input name="username" minlength="3" maxlength="32" required autocomplete="username" placeholder="ornek_kullanici"></label>
+          <label>E-posta<input name="email" type="email" required autocomplete="email" placeholder="sen@ornek.com"></label>
+          <label>Şifre<input name="password" type="password" minlength="8" required autocomplete="new-password" placeholder="En az 8 karakter"></label>
+          <button class="primary-button">Hesap oluştur <span>→</span></button>
+        </form>
+        <p class="switch">Zaten hesabın var mı? <a href="{{ url_for('login') }}">Giriş yap</a></p>
+      </section>
+    {% elif page == "login" %}
+      <section class="auth-card">
+        <div class="eyebrow">TEKRAR HOŞ GELDİN</div><h1>Giriş yap<span class="accent">.</span></h1>
+        <p class="muted">Lynko hesabına eriş.</p>
+        <form method="post" class="stack-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label>Kullanıcı adı veya e-posta<input name="identity" required autocomplete="username" placeholder="Kullanıcı adın veya e-postan"></label>
+          <label>Şifre<input name="password" type="password" required autocomplete="current-password" placeholder="Şifren"></label>
+          <button class="primary-button">Giriş yap <span>→</span></button>
+        </form>
+        <p class="switch">Hesabın yok mu? <a href="{{ url_for('register') }}">Kayıt ol</a></p>
+      </section>
+    {% elif page == "not_found" %}
+      <section class="hero"><div class="eyebrow">404 · BAĞLANTI BULUNAMADI</div><h1>Bu kısa link<br>burada yok<span class="accent">.</span></h1><p class="muted">Kod yanlış olabilir veya bağlantı silinmiş olabilir.</p><a class="primary-button button-link" href="{{ url_for('index') }}">Ana sayfaya dön →</a></section>
+    {% else %}
+      <section class="hero">
+        <div class="eyebrow"><span class="pulse"></span> DAHA KISA. DAHA PRATİK.</div>
+        <h1>Uzun linklere<br>kısa bir <span class="accent">çözüm.</span></h1>
+        <p class="hero-copy">Bağlantılarını saniyeler içinde kısalt. Hepsini Lynko hesabından yönet.</p>
+        {% if current_user %}
+          <form class="shorten-form" method="post" action="{{ url_for('create_link') }}">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <span class="input-icon">↗</span>
+            <input type="url" name="target_url" required maxlength="4000" placeholder="https://uzun-bir-link.com/ornek/sayfa">
+            <button class="primary-button">Kısalt <span>→</span></button>
+          </form>
+          <div class="form-hint">Kısaltmak için http:// veya https:// ile başlayan bir adres gir.</div>
+        {% else %}
+          <div class="guest-box"><p>Link oluşturmak ve kaydetmek için hesabına giriş yap.</p><a class="primary-button button-link" href="{{ url_for('register') }}">Ücretsiz hesap oluştur →</a></div>
+        {% endif %}
+      </section>
 
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
+      {% if current_user %}
+      <section class="dashboard">
+        <div class="section-heading"><div><div class="eyebrow">KONTROL PANELİ</div><h2>Bağlantıların</h2></div><span class="count">{{ links|length }} link</span></div>
+        {% if links %}
+          <div class="link-list">
+            {% for link in links %}
+            <article class="link-card">
+              <div class="link-symbol">↗</div>
+              <div class="link-info">
+                <a class="short-url" href="{{ url_for('follow_short_link', code=link.code, _external=True) }}" target="_blank" rel="noopener">{{ request.host_url }}{{ link.code }}</a>
+                <div class="target-url">{{ link.target_url }}</div>
+              </div>
+              <button class="copy-button" type="button" data-copy="{{ url_for('follow_short_link', code=link.code, _external=True) }}">Kopyala</button>
+              <form method="post" action="{{ url_for('delete_link', link_id=link.id) }}" onsubmit="return confirm('Bu bağlantı silinsin mi?')">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"><button class="delete-button" title="Bağlantıyı sil" aria-label="Bağlantıyı sil">×</button>
+              </form>
+            </article>
+            {% endfor %}
+          </div>
+        {% else %}
+          <div class="empty-state"><div class="empty-icon">↗</div><h3>Henüz bağlantın yok</h3><p>Yukarıya uzun bir link ekleyerek ilk kısa bağlantını oluştur.</p></div>
+        {% endif %}
+      </section>
+
+      <section class="settings-card">
+        <div><div class="eyebrow">HESAP AYARLARI</div><h2>Hesabını sil</h2><p class="muted">Bu işlem hesabını ve oluşturduğun tüm kısa bağlantıları kalıcı olarak siler.</p></div>
+        <form method="post" action="{{ url_for('delete_account') }}" class="delete-account-form" onsubmit="return confirm('Hesabın ve bütün kısa bağlantıların kalıcı olarak silinsin mi?')">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <input type="password" name="password" required placeholder="Onaylamak için şifren">
+          <button class="danger-button">Hesabı sil</button>
+        </form>
+      </section>
+      {% endif %}
+    {% endif %}
+  </main>
+  <footer><a class="brand footer-brand" href="{{ url_for('index') }}">lynko<span class="dot">.</span></a><span>Bağlantıların, daha kısa bir dünyada.</span></footer>
+  <script src="{{ url_for('static', filename='main.js') }}"></script>
 </body>
 </html>
